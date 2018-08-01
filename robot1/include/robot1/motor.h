@@ -11,40 +11,47 @@
 
 #define motor1_FG1 22
 
-bool CW  = true;
-bool CCW = false;
-bool ON  = true;
-bool OFF = false;
+bool CW ;
+bool CCW;
+bool ON ;
+bool OFF;
 
+int encoder_pulse_motor1;
+int encoder_pulse_motor2;
 
+int encoder_pulse_motor1_position;
+int encoder_pulse_motor2_position;
 
-int encoder_pulse_motor1 = 0;
-int encoder_pulse_motor2 = 0;
+bool check_position_control;
 
-int encoder_pulse_motor1_position = 0;
-int encoder_pulse_motor2_position = 0;
-
-bool check_position_control = false;
-
-int pwm_value_motor_1 = 0;
-int pwm_value_motor_2 = 0;
+int pwm_value_motor_1;
+int pwm_value_motor_2;
 
 float P_gain =  0.5; //20
 
+bool motor_direction_motor1;
+int speed_motor1;
+int angle_motor1;
+bool motor_onoff_motor1;
+
+bool motor_direction_motor2;
+int speed_motor2;
+int angle_motor2;
+bool motor_onoff_motor2;
+
+void initialize(int argc, char **argv);
 int position_control(int* encoder_read_position, int* desired_position);
 void speed_controller(int* encoder_read, int desired_speed, int* pwm_value);
-
 void motor_control(int id, int motor_line1, int motor_line2, bool direction, int desired_speed_rpm, int angle, bool on_off);
 
 
-bool motor_direction_motor1 = true;
-int speed_motor1 = 0;
-int angle_motor1 = 0;
-bool motor_onoff_motor1 = false;
+//ros communication
+ros::Publisher  angle_control_done_pub;
+ros::Subscriber motor_reference1_sub;
+ros::Subscriber motor_reference2_sub;
 
-bool motor_direction_motor2 = true;
-int speed_motor2 = 0;
-int angle_motor2 = 0;
-bool motor_onoff_motor2 = false;
+//message for communication
+std_msgs::String angle_control_done_msg;
+
 
 
