@@ -1,0 +1,12 @@
+<launch>
+  <!-- <node pkg = "matrix" type = "matrix_node" name = "matrix_node"/> -->
+<!--  <node pkg = "touch_sensor" type = "touch_sensor_node" name = "touch_sensor_node"/> -->
+  <node pkg = "robot1" type = "sound_node" name = "sound_node"/>
+<!--  <node pkg = "robot1" type = "ir" name = "ir">
+  </node>
+  <node pkg = "robot1" type = "line_tracing" name = "lineTracing"/> -->
+ <!-- <node pkg = "robot1" type = "motor" name = "motor"/>-->
+
+  <node pkg = "edie_control_manager" type = "edie_control_manager_node" name = "edie_control_manager_node"/>
+  <node pkg = "edie_remote_control_server" type = "edie_remote_control_server_node" name = "edie_reomte_control_server_node"/>
+</launch>
