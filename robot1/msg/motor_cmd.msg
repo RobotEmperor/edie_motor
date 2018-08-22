@@ -1,5 +1,7 @@
+int8 motor_id
 
-bool  direction1
-bool  direction2
-int32 rpm1
-int32 rpm2
+bool motor_onoff
+bool  motor_desired_direction 
+int32 motor_desired_rpm
+int32 motor_desired_angle
+

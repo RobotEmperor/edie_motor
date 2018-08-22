@@ -14,7 +14,6 @@ find_package(catkin REQUIRED COMPONENTS
 
  add_message_files(
    FILES
-   robot1_info.msg
    motor_cmd.msg
  )
 
@@ -38,7 +37,7 @@ catkin_package(
 
 include_directories(include ${catkin_INCLUDE_DIRS} )
 
- add_executable(motor src/motor.cpp)
+ add_executable(motor src/motor.cpp src/motor_algorithm.cpp)
  target_link_libraries(motor ${catkin_LIBRARIES} wiringPi)
  add_dependencies(motor robot1_generate_messages_cpp)
 
