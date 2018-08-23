@@ -40,11 +40,11 @@ DcMotorForRaspberryPi::~DcMotorForRaspberryPi()
 }
 void DcMotorForRaspberryPi::speed_controller(int desired_speed)
 {
-  double static_encoder_pulse = 0;
+  static double static_encoder_pulse = 0;
   double speed_error = 0;
   double control = 0;
 
-  static_encoder_pulse = (encoder_pulse1+ encoder_pulse2);
+  static_encoder_pulse = (encoder_pulse1+ encoder_pulse2)*0.2 + static_encoder_pulse*0.8;
   encoder_pulse1 = 0;
   encoder_pulse2 = 0;
   result_rpm =  (((static_encoder_pulse)*60*control_freqency_)/(encoer_pulse_per_rotation_*channel_));// digital low pass filter  // basic 4 ch

@@ -9,15 +9,15 @@
 #define motor1_IN1 26
 #define motor1_PWM 12
 
-#define motor1_FG1 22
-#define motor1_FG2 27
+#define motor1_FG1 6 //22
+#define motor1_FG2 5
 
 
 #define motor2_IN1 19
 #define motor2_PWM 13
 
-#define motor2_FG1 23
-#define motor2_FG2 24
+#define motor2_FG1 22 //23
+#define motor2_FG2 27
 
 
 #include <ros/ros.h>
