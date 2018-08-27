@@ -12,7 +12,6 @@ DcMotorForRaspberryPi::DcMotorForRaspberryPi(int encoder_pulse_per_rotation, int
 encoer_pulse_per_rotation_(encoder_pulse_per_rotation),
 control_freqency_(control_freqency),
 channel_(channel)
-
 {
   encoder_pulse1 = 0;
   encoder_pulse2 = 0;
@@ -32,7 +31,10 @@ channel_(channel)
   speed_motor = 0;
   angle_motor = 0;
   result_rpm = 0;
-
+ 
+  static_encoder_pulse = 0;
+  speed_error = 0;
+  control = 0;
 }
 DcMotorForRaspberryPi::~DcMotorForRaspberryPi()
 {
@@ -40,10 +42,6 @@ DcMotorForRaspberryPi::~DcMotorForRaspberryPi()
 }
 void DcMotorForRaspberryPi::speed_controller(int desired_speed)
 {
-  static double static_encoder_pulse = 0;
-  double speed_error = 0;
-  double control = 0;
-
   static_encoder_pulse = (encoder_pulse1+ encoder_pulse2)*0.2 + static_encoder_pulse*0.8;
   encoder_pulse1 = 0;
   encoder_pulse2 = 0;

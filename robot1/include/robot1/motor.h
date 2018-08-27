@@ -34,5 +34,9 @@ class DcMotorForRaspberryPi
 
     double p_gain_position_;
     double p_gain_speed_;
+
+    double static_encoder_pulse;
+    double speed_error;
+    double control;
 };
 

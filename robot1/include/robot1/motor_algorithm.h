@@ -73,8 +73,8 @@ std_msgs::Float64  result_rpm1_msg;
 std_msgs::Float64  result_rpm2_msg;
 
 
-DcMotorForRaspberryPi motor1;
-DcMotorForRaspberryPi motor2;
+DcMotorForRaspberryPi* motor1;
+DcMotorForRaspberryPi* motor2;
 
 TrajectoryGenerator tra_motor1;
 TrajectoryGenerator tra_motor2;

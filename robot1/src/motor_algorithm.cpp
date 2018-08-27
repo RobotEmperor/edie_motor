@@ -59,30 +59,31 @@ double TrajectoryGenerator::trapezoidal_function(double desired_value, double ti
 //////////////////////////////////////////////////////////////////////////////
 void initialize()
 {
-  motor1 = DcMotorForRaspberryPi(399,100,2);
-  motor2 = DcMotorForRaspberryPi(399,100,2);
+  motor1 = new DcMotorForRaspberryPi(399,100,2);
+  motor2 = new DcMotorForRaspberryPi(399,100,2);
 
   current_desried_speed_motor1 = 0;
   current_desried_speed_motor2 = 0;
 }
 void motor1_encoder_1(void)
 {
-  motor1.encoder_pulse1 ++;
+  motor1->encoder_pulse1 ++;
   //  encoder_pulse_motor1_position ++;
 }
 void motor1_encoder_2(void)
 {
-  motor1.encoder_pulse2++;
+  motor1->encoder_pulse2++;
   //  encoder_pulse_motor2_position ++;
 }
+
 void motor2_encoder_1(void)
 {
-  motor2.encoder_pulse1 ++;
+  motor2->encoder_pulse1 ++;
   //  encoder_pulse_motor1_position ++;
 }
 void motor2_encoder_2(void)
 {
-  motor2.encoder_pulse2 ++;
+  motor2->encoder_pulse2 ++;
   //  encoder_pulse_motor2_position ++;
 }
 void motor_callback1(const robot1::motor_cmd::ConstPtr& msg)
@@ -102,8 +103,8 @@ void motor_callback2(const robot1::motor_cmd::ConstPtr& msg)
 //test
 void motor_theta_dist_callback(const std_msgs::Float64MultiArray::ConstPtr& msg)
 {
-  motor1.speed_motor = msg->data[0];
-  motor2.speed_motor = msg->data[1];
+  motor1->speed_motor = msg->data[0];
+  motor2->speed_motor = msg->data[1];
 
   //encoder_pulse_motor1_position = 0;
   //encoder_pulse_motor2_position = 0;
@@ -284,14 +285,14 @@ void motor_control(int id, int motor_line1, int motor_line2, bool direction, int
       //  {
       //    desired_speed_rpm = position_control(&encoder_pulse_motor1_position, angle,  position_max_output_common, &check_position_control1);
       //  }
-      motor1.speed_controller(desired_speed_rpm);
+      motor1->speed_controller(desired_speed_rpm);
       break;
     case 2 :
       //if(angle != 0)
       //{
       //desired_speed_rpm = position_control(&encoder_pulse_motor2_position, angle,  position_max_output_common, &check_position_control2);
       //}
-      motor2.speed_controller(desired_speed_rpm);
+      motor2->speed_controller(desired_speed_rpm);
       break;
     default :
       break;
@@ -307,31 +308,16 @@ void motor_control(int id, int motor_line1, int motor_line2, bool direction, int
 
 void controlFunction(const ros::TimerEvent&)
 {
+  motor1->onoff = 1;
+  motor2->onoff = 1;
 
-  printf("111encoder_1 :: %d \n", motor1.encoder_pulse1);
-  printf("111encoder_2 :: %d \n", motor1.encoder_pulse2);
+  current_desried_speed_motor1 = tra_motor1.trapezoidal_function(motor1->speed_motor, 5);
+  current_desried_speed_motor2 = tra_motor2.trapezoidal_function(motor2->speed_motor, 5);
+  motor_control(1, motor1_IN1, 0,  motor1->direction, current_desried_speed_motor1 , motor1->angle_motor, motor1->onoff);
+  motor_control(2, motor2_IN1, 0,  motor2->direction, current_desried_speed_motor2 , motor2->angle_motor, motor2->onoff);
 
-  printf("222encoder_1 :: %d \n", motor2.encoder_pulse1);
-  printf("222encoder_2 :: %d \n", motor2.encoder_pulse2);
-
-  motor1.onoff = 1;
-  motor2.onoff = 1;
-  //printf("desired_value :: %f \n", trapezoidal_function(motor1.speed_motor, motor2.speed_motor));
-
-  current_desried_speed_motor1 = tra_motor1.trapezoidal_function(motor1.speed_motor, 1);
-  current_desried_speed_motor2 = tra_motor2.trapezoidal_function(motor2.speed_motor, 1);
-  motor_control(1, motor1_IN1, 0,  motor1.direction, current_desried_speed_motor1 , motor1.angle_motor, motor1.onoff);
-  motor_control(2, motor2_IN1, 0,  motor2.direction, current_desried_speed_motor2 , motor2.angle_motor, motor2.onoff);
-
-
-  //printf("result_pwm_1 :: %f \n", motor1.pwm_value_motor);
-  //printf("result_pwm_2 :: %f \n", motor2.pwm_value_motor);
-
- //motor2.encoder_pulse1
-  
-//pwmWrite(motor1_PWM, 50);
-  pwmWrite(motor1_PWM, (int) motor1.pwm_value_motor);
-  pwmWrite(motor2_PWM, (int) motor2.pwm_value_motor);
+  pwmWrite(motor1_PWM, (int) motor1->pwm_value_motor);
+  pwmWrite(motor2_PWM, (int) motor2->pwm_value_motor);
 
 }
 int main (int argc, char **argv)
@@ -383,8 +369,8 @@ int main (int argc, char **argv)
   {
     desired_rpm1_msg.data = current_desried_speed_motor1;
     desired_rpm2_msg.data = current_desried_speed_motor2;
-    result_rpm1_msg.data = motor1.result_rpm;
-    result_rpm2_msg.data = motor2.result_rpm;
+    result_rpm1_msg.data = motor1->result_rpm;
+    result_rpm2_msg.data = motor2->result_rpm;
     usleep(100);
     result_rpm1_pub.publish(result_rpm1_msg);
     result_rpm2_pub.publish(result_rpm2_msg);
@@ -392,8 +378,6 @@ int main (int argc, char **argv)
     desired_rpm2_pub.publish(desired_rpm2_msg);
 
     ros::spinOnce();
-    //pwmWrite(motor1_PWM, 50);
-    //pwmWrite(motor2_PWM, 50);
   }
 
   pwmWrite(motor1_PWM, 0);
