@@ -21,6 +21,7 @@ TrajectoryGenerator::~TrajectoryGenerator()
 }
 double TrajectoryGenerator::linear_function(double desired_value, double time)
 {
+
   if(current_desired_value != desired_value)
   {
     time_count = 0;
@@ -55,6 +56,7 @@ double TrajectoryGenerator::linear_function(double desired_value, double time)
   {
     return pre_desired_value;
   }
+
 }
 //////////////////////////////////////////////////////////////////////////////
 void initialize()
@@ -65,8 +67,14 @@ void initialize()
   motor1 = new DcMotorForRaspberryPi(399,100,2);
   motor2 = new DcMotorForRaspberryPi(399,100,2);
 
-  current_desried_speed_motor1 = 0;
-  current_desried_speed_motor2 = 0;
+  tra_motor1 = new TrajectoryGenerator;
+  tra_motor2 = new TrajectoryGenerator;
+
+  current_desired_speed_motor1 = 0;
+  current_desired_speed_motor2 = 0;
+
+  motor1->check_position = true;  
+  motor2->check_position = true;
 }
 void motor1_encoder_1(void)
 {
@@ -89,25 +97,11 @@ void motor2_encoder_2(void)
   motor2->encoder_pulse2 ++;
   motor2->encoder_pulse_position2 ++;
 }
-void motor_callback1(const robot1::motor_cmd::ConstPtr& msg)
-{
-  /*motor_direction_motor1 = msg->motor_desired_direction;
-  speed_motor1 = msg->motor_desired_rpm;
-  angle_motor1 = msg->motor_desired_angle;
-  motor_onoff_motor1 = msg->motor_onoff;*/
-}
-void motor_callback2(const robot1::motor_cmd::ConstPtr& msg)
-{
-  /*  motor_direction_motor2 = msg->motor_desired_direction;
-  speed_motor2 = msg->motor_desired_rpm;
-  angle_motor2 = msg->motor_desired_angle;
-  motor_onoff_motor2 = msg->motor_onoff;*/
-}
 //test
 void motor_theta_dist_callback(const std_msgs::Float64MultiArray::ConstPtr& msg)
 {
-  reference_angle = msg->data[1];
-  reference_distance = msg->data[0];
+  reference_angle = msg->data[0];
+  reference_distance = msg->data[1];
 
   motor1->encoder_pulse_position1 = 0;
   motor1->encoder_pulse_position2 = 0;
@@ -128,7 +122,7 @@ void algorithm(double angle, double distance)
     motor2->encoder_pulse_position1 = 0;
     motor2->encoder_pulse_position2 = 0;
 
-    motor1->check_position= false;
+    motor1->check_position = false;
     motor2->check_position = false;
     printf("Motion change \n");
   }
@@ -137,8 +131,10 @@ void algorithm(double angle, double distance)
     motion_sequence ++;
     angle_control_done_msg.data = "done";
     angle_control_done_pub.publish(angle_control_done_msg);
+
     motor1->angle_motor = 0;
     motor2->angle_motor = 0;
+
     printf("Motion done! \n");
   }
   else if(motor1->check_position == true && motor2->check_position == true && motion_sequence == 3)
@@ -148,7 +144,7 @@ void algorithm(double angle, double distance)
   else if(motor1->check_position == false && motor2->check_position == false && motion_sequence == 3)
   {
     motion_sequence = 1;
-    printf("motion init! \n");
+    printf("Motion init! \n");
   }
   else
   {
@@ -177,19 +173,19 @@ void algorithm(double angle, double distance)
   }
   case 2 :
   {
-    motor1->position_max_rpm = 80;
-    motor2->position_max_rpm = 80;
+    motor1->position_max_rpm = 50;
+    motor2->position_max_rpm = 50;
     motor1->angle_motor = (int) ((fabs(distance)/0.035)*180)/M_PI; ///
     motor2->angle_motor = motor1->angle_motor;
     if(distance > 0)
     {
       motor1->direction = true;
-      motor2->direction = false;
+      motor2->direction = true;
     }
-    else
+    if(distance < 0)
     {
       motor1->direction = false;
-      motor2->direction = true;
+      motor2->direction = false;
     }
     break;
   }
@@ -198,21 +194,10 @@ void algorithm(double angle, double distance)
   }
 }
 /////////////////////////////////////////////////////////////////////////////////////
-void motor_control(int id, int motor_line1, int motor_line2, bool direction, int desired_speed_rpm, int angle, bool on_off)
+void motor_control(int id, int motor_line1, int mode, bool direction, int desired_speed_rpm, int angle, bool on_off)
 {
   if(on_off == true)
   {
-    if(desired_speed_rpm == 0 && angle == 0)
-    {
-      pwmWrite(motor1_PWM, 0);
-      pwmWrite(motor2_PWM, 0);
-    }
-    else
-    {
-      desired_speed_rpm = motor1->position_controller(angle, motor1->position_max_rpm);
-      desired_speed_rpm = motor2->position_controller(angle, motor2->position_max_rpm);
-    }
-
     if(direction == true)//CW
     {
       digitalWrite(motor_line1,HIGH);
@@ -225,9 +210,23 @@ void motor_control(int id, int motor_line1, int motor_line2, bool direction, int
     switch (id)
     {
     case 1 :
+      if(mode == 1)
+      {
+        desired_speed_rpm = motor1->position_controller(angle, motor1->position_max_rpm);
+      }
+      current_desired_speed_motor1 = tra_motor1->linear_function(desired_speed_rpm, 2);
+      desired_speed_rpm = current_desired_speed_motor1;
+     
       motor1->speed_controller(desired_speed_rpm);
       break;
     case 2 :
+      if(mode == 1)
+      {
+        desired_speed_rpm = motor2->position_controller(angle, motor2->position_max_rpm);
+      }
+      current_desired_speed_motor2 = tra_motor2->linear_function(desired_speed_rpm, 2);
+      desired_speed_rpm = current_desired_speed_motor2;
+
       motor2->speed_controller(desired_speed_rpm);
       break;
     default :
@@ -248,10 +247,9 @@ void controlFunction(const ros::TimerEvent&)
   motor2->onoff = 1;
 
   algorithm(reference_angle, reference_distance);
-  //  current_desried_speed_motor1 = tra_motor1->linear_function(motor1->speed_motor, 1);
-  //  current_desried_speed_motor2 = tra_motor2->linear_function(motor2->speed_motor, 1);
-  motor_control(1, motor1_IN1, 0,  motor1->direction, current_desried_speed_motor1 , motor1->angle_motor, motor1->onoff);
-  motor_control(2, motor2_IN1, 0,  motor2->direction, current_desried_speed_motor2 , motor2->angle_motor, motor2->onoff);
+
+  motor_control(1, motor1_IN1, 1,  motor1->direction, motor1->speed_motor, motor1->angle_motor, motor1->onoff);
+  motor_control(2, motor2_IN1, 1,  motor2->direction, motor2->speed_motor, motor2->angle_motor, motor2->onoff);
 
   pwmWrite(motor1_PWM, (int) motor1->pwm_value_motor);
   pwmWrite(motor2_PWM, (int) motor2->pwm_value_motor);
@@ -317,6 +315,10 @@ int main (int argc, char **argv)
     ros::spinOnce();
   }
 
+  delete motor1;
+  delete motor2;
+  delete tra_motor1;
+  delete tra_motor2;
   pwmWrite(motor1_PWM, 0);
   pwmWrite(motor2_PWM, 0);
 

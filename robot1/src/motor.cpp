@@ -19,7 +19,7 @@ DcMotorForRaspberryPi::DcMotorForRaspberryPi(int encoder_pulse_per_rotation, int
   encoder_pulse_position1 = 0;
   encoder_pulse_position2 = 0;
 
-  p_gain_position_ = 0.5;
+  p_gain_position_ = 0.01;
   p_gain_speed_ = 0.5;
 
   pwm_value_motor = 0;
@@ -41,7 +41,7 @@ DcMotorForRaspberryPi::DcMotorForRaspberryPi(int encoder_pulse_per_rotation, int
   position_control_ = 0;
 
   position_max_rpm = 0;
-  check_position = false;
+  check_position = true;
 }
 DcMotorForRaspberryPi::~DcMotorForRaspberryPi()
 {
@@ -74,12 +74,12 @@ void DcMotorForRaspberryPi::speed_controller(int desired_speed)
 }
 double DcMotorForRaspberryPi::position_controller(int desired_angle, int max_rpm)
 {
-  position_static_encoder_pulse_ = (encoder_pulse_position1+ encoder_pulse_position2)*0.2 + position_static_encoder_pulse_*0.8;
+  position_static_encoder_pulse_ = (encoder_pulse_position1+ encoder_pulse_position2);
 
   if(((desired_angle*encoder_pulse_per_rotation_*channel_)/360) <= position_static_encoder_pulse_)
   {
     check_position = true;
-    return position_control_;
+    return 0;
   }
   else
   {

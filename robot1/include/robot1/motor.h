@@ -3,6 +3,9 @@
  *
  *      Author: robotemperor
  */
+#include <stdio.h>
+#include <math.h>
+
 class DcMotorForRaspberryPi
 {
   public:

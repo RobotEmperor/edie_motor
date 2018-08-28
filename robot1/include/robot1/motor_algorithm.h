@@ -40,17 +40,14 @@ class TrajectoryGenerator
   public:
     TrajectoryGenerator();
     ~TrajectoryGenerator();
+    double linear_function(double desired_value, double time);
 
+  private:
     double pre_desired_value;
     double current_desired_value;
     double out_value;
     double time_count;
     bool   tra_done_check;
-
-    double linear_function(double desired_value, double time);
-    double trapezoidal_function(double desired_value, double acceleration_time, double constant_time);
-
-  private:
 
 };
 
@@ -62,9 +59,6 @@ ros::Publisher  desired_rpm2_pub;
 
 ros::Publisher  result_rpm1_pub;
 ros::Publisher  result_rpm2_pub;
-
-ros::Subscriber motor_reference1_sub;
-ros::Subscriber motor_reference2_sub;
 
 ros::Subscriber motor_theta_dist_sub;
 
@@ -83,8 +77,8 @@ DcMotorForRaspberryPi* motor2;
 TrajectoryGenerator* tra_motor1;
 TrajectoryGenerator* tra_motor2;
 
-double current_desried_speed_motor1;
-double current_desried_speed_motor2;
+double current_desired_speed_motor1;
+double current_desired_speed_motor2;
 
 double reference_angle;
 double reference_distance;
@@ -92,11 +86,9 @@ double reference_distance;
 //function
 void initialize();
 void algorithm(double angle, double distance);
-void motor_control(int id, int motor_line1, int motor_line2, bool direction, int desired_speed_rpm, int angle, bool on_off);
+void motor_control(int id, int motor_line1, int mode, bool direction, int desired_speed_rpm, int angle, bool on_off);
 
 void motor_theta_dist_callback(const std_msgs::Float64MultiArray::ConstPtr& msg);
-void motor_callback2(const robot1::motor_cmd::ConstPtr& msg);
-void motor_callback1(const robot1::motor_cmd::ConstPtr& msg);
 
 //timer
 void controlFunction(const ros::TimerEvent&);
