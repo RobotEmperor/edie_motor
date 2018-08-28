@@ -25,18 +25,26 @@ class DcMotorForRaspberryPi
     int encoder_pulse_position1;
     int encoder_pulse_position2;
 
+    int position_max_rpm;
+    bool check_position;
+
     void speed_controller(int desired_speed);
+    double position_controller(int desired_angle, int max_rpm);
 
   private:
-    int encoer_pulse_per_rotation_;
+    int encoder_pulse_per_rotation_;
     int control_freqency_;
     int channel_;
 
     double p_gain_position_;
     double p_gain_speed_;
 
-    double static_encoder_pulse;
-    double speed_error;
-    double control;
+    double speed_static_encoder_pulse_;
+    double speed_error_;
+    double speed_control_;
+
+    double position_static_encoder_pulse_;
+    double position_error_;
+    double position_control_;
 };
 

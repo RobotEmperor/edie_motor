@@ -19,46 +19,49 @@ TrajectoryGenerator::~TrajectoryGenerator()
 {
 
 }
-double TrajectoryGenerator::trapezoidal_function(double desired_value, double time)
+double TrajectoryGenerator::linear_function(double desired_value, double time)
 {
   if(current_desired_value != desired_value)
-    {
-      time_count = 0;
-      tra_done_check = false;
-      pre_desired_value = out_value;
-    }
-    current_desired_value = desired_value;
+  {
+    time_count = 0;
+    tra_done_check = false;
+    pre_desired_value = out_value;
+  }
+  current_desired_value = desired_value;
 
-    time_count = time_count + 0.01;
+  time_count = time_count + 0.01;
 
-    if(time_count >= time)
-    {
-      tra_done_check = true;
-      pre_desired_value = desired_value;
-      return pre_desired_value;
-    }
+  if(time_count >= time)
+  {
+    tra_done_check = true;
+    pre_desired_value = desired_value;
+    return pre_desired_value;
+  }
 
-    if(pre_desired_value != desired_value && tra_done_check == false)
+  if(pre_desired_value != desired_value && tra_done_check == false)
+  {
+    if(pre_desired_value > desired_value) // 하강 트레젝토리 y = -at + b
     {
-      if(pre_desired_value > desired_value) // 하강 트레젝토리 y = -at + b
-      {
-        out_value = -((pre_desired_value - desired_value)/time)*time_count + pre_desired_value;
-        return out_value;
-      }
-      if(pre_desired_value < desired_value)// 상승 트레젝토리 y = at + b
-      {
-        out_value = ((desired_value - pre_desired_value)/time)*time_count + pre_desired_value;
-        return out_value;
-      }
+      out_value = -((pre_desired_value - desired_value)/time)*time_count + pre_desired_value;
+      return out_value;
     }
-    else
+    if(pre_desired_value < desired_value)// 상승 트레젝토리 y = at + b
     {
-      return pre_desired_value;
+      out_value = ((desired_value - pre_desired_value)/time)*time_count + pre_desired_value;
+      return out_value;
     }
+  }
+  else
+  {
+    return pre_desired_value;
+  }
 }
 //////////////////////////////////////////////////////////////////////////////
 void initialize()
 {
+  reference_angle = 0;
+  reference_distance = 0;
+
   motor1 = new DcMotorForRaspberryPi(399,100,2);
   motor2 = new DcMotorForRaspberryPi(399,100,2);
 
@@ -68,23 +71,23 @@ void initialize()
 void motor1_encoder_1(void)
 {
   motor1->encoder_pulse1 ++;
-  //  encoder_pulse_motor1_position ++;
+  motor1->encoder_pulse_position1 ++;
 }
 void motor1_encoder_2(void)
 {
   motor1->encoder_pulse2++;
-  //  encoder_pulse_motor2_position ++;
+  motor1->encoder_pulse_position2 ++;
 }
 
 void motor2_encoder_1(void)
 {
   motor2->encoder_pulse1 ++;
-  //  encoder_pulse_motor1_position ++;
+  motor2->encoder_pulse_position1 ++;
 }
 void motor2_encoder_2(void)
 {
   motor2->encoder_pulse2 ++;
-  //  encoder_pulse_motor2_position ++;
+  motor2->encoder_pulse_position2 ++;
 }
 void motor_callback1(const robot1::motor_cmd::ConstPtr& msg)
 {
@@ -103,42 +106,46 @@ void motor_callback2(const robot1::motor_cmd::ConstPtr& msg)
 //test
 void motor_theta_dist_callback(const std_msgs::Float64MultiArray::ConstPtr& msg)
 {
-  motor1->speed_motor = msg->data[0];
-  motor2->speed_motor = msg->data[1];
+  reference_angle = msg->data[1];
+  reference_distance = msg->data[0];
 
-  //encoder_pulse_motor1_position = 0;
-  //encoder_pulse_motor2_position = 0;
+  motor1->encoder_pulse_position1 = 0;
+  motor1->encoder_pulse_position2 = 0;
+  motor2->encoder_pulse_position1 = 0;
+  motor2->encoder_pulse_position2 = 0;
 
-  //check_position_control1 = false;
-  //check_position_control2 = false;
+  motor1->check_position = false;
+  motor2->check_position = false;
 }
-/*void algorithm(double angle, double distance)
+void algorithm(double angle, double distance)
 {
   static int motion_sequence = 1;
-
-  if(check_position_control1 == true && check_position_control2 == true && motion_sequence == 1)
+  if(motor1->check_position == true && motor2->check_position == true && motion_sequence == 1)
   {
     motion_sequence ++;
-    encoder_pulse_motor1_position = 0;
-    encoder_pulse_motor2_position = 0;
-    check_position_control1 = false;
-    check_position_control2 = false;
+    motor1->encoder_pulse_position1 = 0;
+    motor1->encoder_pulse_position2 = 0;
+    motor2->encoder_pulse_position1 = 0;
+    motor2->encoder_pulse_position2 = 0;
+
+    motor1->check_position= false;
+    motor2->check_position = false;
     printf("Motion change \n");
   }
-  else if(check_position_control1 == true && check_position_control2 == true && motion_sequence == 2)
+  else if(motor1->check_position == true && motor2->check_position == true && motion_sequence == 2)
   {
     motion_sequence ++;
     angle_control_done_msg.data = "done";
     angle_control_done_pub.publish(angle_control_done_msg);
-    angle_motor1 = 0;
-    angle_motor2 = angle_motor1;
+    motor1->angle_motor = 0;
+    motor2->angle_motor = 0;
     printf("Motion done! \n");
   }
-  else if(check_position_control1 == true && check_position_control2 == true && motion_sequence == 3)
+  else if(motor1->check_position == true && motor2->check_position == true && motion_sequence == 3)
   {
     printf("waiting! \n");
   }
-  else if(check_position_control1 == false && check_position_control2 == false && motion_sequence == 3)
+  else if(motor1->check_position == false && motor2->check_position == false && motion_sequence == 3)
   {
     motion_sequence = 1;
     printf("motion init! \n");
@@ -147,113 +154,49 @@ void motor_theta_dist_callback(const std_msgs::Float64MultiArray::ConstPtr& msg)
   {
     printf("running! \n");
   }
-
-
   switch(motion_sequence)
   {
   case 1 :
   {
-    position_max_output_common = 20;
-
-    angle_motor1 = (int) fabs(angle*2);
-    angle_motor2 = angle_motor1;
+    motor1->position_max_rpm = 20;
+    motor2->position_max_rpm = 20;
+    motor1->angle_motor = (int) fabs(angle*2);////
+    motor2->angle_motor = motor1->angle_motor;
 
     if(angle < 0)
     {
-      motor_direction_motor1 = false;
-      motor_direction_motor2 = false;
+      motor1->direction = false;
+      motor2->direction = false;
     }
     else
     {
-      motor_direction_motor1 = true;
-      motor_direction_motor2 = true;
+      motor1->direction = true;
+      motor2->direction = true;
     }
     break;
   }
   case 2 :
   {
-    position_max_output_common = 80;
-    angle_motor1 = (int) ((fabs(distance)/0.035)*180)/M_PI;
-    angle_motor2 = angle_motor1;
-
+    motor1->position_max_rpm = 80;
+    motor2->position_max_rpm = 80;
+    motor1->angle_motor = (int) ((fabs(distance)/0.035)*180)/M_PI; ///
+    motor2->angle_motor = motor1->angle_motor;
     if(distance > 0)
     {
-      motor_direction_motor1 = true;
-      motor_direction_motor2 = false;
+      motor1->direction = true;
+      motor2->direction = false;
     }
     else
     {
-      motor_direction_motor1 = false;
-      motor_direction_motor2 = true;
+      motor1->direction = false;
+      motor2->direction = true;
     }
-
     break;
   }
   default :
     break;
   }
-}*/
-
-//////////////////////////////////////////////////////////////////////////////
-/*int position_control(int* encoder_read_position, int desired_position, int max_out_put, bool* check)
-{
-  int static_encoder_pulse = 0;
-  int result_position  = 0;
-  int position_error = 0;
-  int control = 0;
-  double P_gain_position = 0.5;
-  static int speed_output = 0;
-
-  static_encoder_pulse = *encoder_read_position;
-  result_position = (int) (static_encoder_pulse*(399/360));// pulse 11 gear ratio 34
-
-  if(desired_position <= result_position)
-  {
-    //printf("result_position = %d \n ", result_position);
-    static_encoder_pulse = 0;
-    speed_output = 0;
- *check = true;
-    return 0; // 0
-  }
-
-  position_error = desired_position - result_position;
-
-
-  control = (int)( P_gain_position * (double) position_error);
-
-  if(control > 0)
-  {
-    if(control > 2)
-    {
-      control = 2;
-    }
-
-    speed_output = (speed_output + control);
-
-    if (speed_output > max_out_put)
-    {
-      speed_output = max_out_put;
-    }
-
-  }
-  else if(control < 0)
-  {
-
-    if(control < - 2)
-    {
-      control = - 2;
-    }
-
-    speed_output =  (speed_output +  control);
-
-    if (speed_output < max_out_put)
-    {
-      speed_output = 0;
-    }
-  }
-  return speed_output;
-}*/
-
+}
 /////////////////////////////////////////////////////////////////////////////////////
 void motor_control(int id, int motor_line1, int motor_line2, bool direction, int desired_speed_rpm, int angle, bool on_off)
 {
@@ -261,37 +204,30 @@ void motor_control(int id, int motor_line1, int motor_line2, bool direction, int
   {
     if(desired_speed_rpm == 0 && angle == 0)
     {
-      //  digitalWrite(motor_line1,LOW);
-      //  digitalWrite(motor_line2,LOW);
+      pwmWrite(motor1_PWM, 0);
+      pwmWrite(motor2_PWM, 0);
     }
     else
     {
-      if(direction == true)//CW
-      {
-        digitalWrite(motor_line1,HIGH);
-        //  digitalWrite(motor_line2,LOW);
-      }
-      else if (direction == false)//CCW
-      {
-        digitalWrite(motor_line1,LOW);
-        //  digitalWrite(motor_line2,HIGH);
-      }
+      desired_speed_rpm = motor1->position_controller(angle, motor1->position_max_rpm);
+      desired_speed_rpm = motor2->position_controller(angle, motor2->position_max_rpm);
+    }
+
+    if(direction == true)//CW
+    {
+      digitalWrite(motor_line1,HIGH);
+    }
+    else if (direction == false)//CCW
+    {
+      digitalWrite(motor_line1,LOW);
     }
 
     switch (id)
     {
     case 1 :
-      //if(angle != 0)
-      //  {
-      //    desired_speed_rpm = position_control(&encoder_pulse_motor1_position, angle,  position_max_output_common, &check_position_control1);
-      //  }
       motor1->speed_controller(desired_speed_rpm);
       break;
     case 2 :
-      //if(angle != 0)
-      //{
-      //desired_speed_rpm = position_control(&encoder_pulse_motor2_position, angle,  position_max_output_common, &check_position_control2);
-      //}
       motor2->speed_controller(desired_speed_rpm);
       break;
     default :
@@ -311,8 +247,9 @@ void controlFunction(const ros::TimerEvent&)
   motor1->onoff = 1;
   motor2->onoff = 1;
 
-  current_desried_speed_motor1 = tra_motor1.trapezoidal_function(motor1->speed_motor, 5);
-  current_desried_speed_motor2 = tra_motor2.trapezoidal_function(motor2->speed_motor, 5);
+  algorithm(reference_angle, reference_distance);
+  //  current_desried_speed_motor1 = tra_motor1->linear_function(motor1->speed_motor, 1);
+  //  current_desried_speed_motor2 = tra_motor2->linear_function(motor2->speed_motor, 1);
   motor_control(1, motor1_IN1, 0,  motor1->direction, current_desried_speed_motor1 , motor1->angle_motor, motor1->onoff);
   motor_control(2, motor2_IN1, 0,  motor2->direction, current_desried_speed_motor2 , motor2->angle_motor, motor2->onoff);
 
@@ -367,15 +304,15 @@ int main (int argc, char **argv)
 
   while(ros::ok())
   {
-    desired_rpm1_msg.data = current_desried_speed_motor1;
-    desired_rpm2_msg.data = current_desried_speed_motor2;
-    result_rpm1_msg.data = motor1->result_rpm;
-    result_rpm2_msg.data = motor2->result_rpm;
+    //desired_rpm1_msg.data = current_desried_speed_motor1;
+    //desired_rpm2_msg.data = current_desried_speed_motor2;
+    //result_rpm1_msg.data = motor1->result_rpm;
+    //result_rpm2_msg.data = motor2->result_rpm;
     usleep(100);
-    result_rpm1_pub.publish(result_rpm1_msg);
-    result_rpm2_pub.publish(result_rpm2_msg);
-    desired_rpm1_pub.publish(desired_rpm1_msg);
-    desired_rpm2_pub.publish(desired_rpm2_msg);
+    //result_rpm1_pub.publish(result_rpm1_msg);
+    //result_rpm2_pub.publish(result_rpm2_msg);
+    //desired_rpm1_pub.publish(desired_rpm1_msg);
+    //desired_rpm2_pub.publish(desired_rpm2_msg);
 
     ros::spinOnce();
   }

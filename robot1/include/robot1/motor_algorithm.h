@@ -47,7 +47,11 @@ class TrajectoryGenerator
     double time_count;
     bool   tra_done_check;
 
-    double trapezoidal_function(double desired_value, double time);
+    double linear_function(double desired_value, double time);
+    double trapezoidal_function(double desired_value, double acceleration_time, double constant_time);
+
+  private:
+
 };
 
 
@@ -76,21 +80,19 @@ std_msgs::Float64  result_rpm2_msg;
 DcMotorForRaspberryPi* motor1;
 DcMotorForRaspberryPi* motor2;
 
-TrajectoryGenerator tra_motor1;
-TrajectoryGenerator tra_motor2;
+TrajectoryGenerator* tra_motor1;
+TrajectoryGenerator* tra_motor2;
 
 double current_desried_speed_motor1;
 double current_desried_speed_motor2;
 
-//function
-void initialize();
-//int position_control(int* encoder_read_position, int desired_position, int max_out_put, bool* check);
-void motor_control(int id, int motor_line1, int motor_line2, bool direction, int desired_speed_rpm, int angle, bool on_off);
-
-//void algorithm(double angle, double distance);
 double reference_angle;
 double reference_distance;
 
+//function
+void initialize();
+void algorithm(double angle, double distance);
+void motor_control(int id, int motor_line1, int motor_line2, bool direction, int desired_speed_rpm, int angle, bool on_off);
 
 void motor_theta_dist_callback(const std_msgs::Float64MultiArray::ConstPtr& msg);
 void motor_callback2(const robot1::motor_cmd::ConstPtr& msg);
