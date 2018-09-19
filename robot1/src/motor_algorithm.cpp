@@ -19,8 +19,9 @@ TrajectoryGenerator::~TrajectoryGenerator()
 {
 
 }
-double TrajectoryGenerator::linear_function(double desired_value, double time)
+double TrajectoryGenerator::linear_function(double desired_value, double acceleration)
 {
+  static double time = 0;
 
   if(current_desired_value != desired_value)
   {
@@ -28,6 +29,9 @@ double TrajectoryGenerator::linear_function(double desired_value, double time)
     tra_done_check = false;
     pre_desired_value = out_value;
   }
+
+  time = fabs((pre_desired_value - desired_value) / acceleration);
+
   current_desired_value = desired_value;
 
   time_count = time_count + 0.01;
@@ -43,12 +47,12 @@ double TrajectoryGenerator::linear_function(double desired_value, double time)
   {
     if(pre_desired_value > desired_value) // 하강 트레젝토리 y = -at + b
     {
-      out_value = -((pre_desired_value - desired_value)/time)*time_count + pre_desired_value;
+      out_value = -(acceleration)*time_count + pre_desired_value;
       return out_value;
     }
     if(pre_desired_value < desired_value)// 상승 트레젝토리 y = at + b
     {
-      out_value = ((desired_value - pre_desired_value)/time)*time_count + pre_desired_value;
+      out_value = (acceleration)*time_count + pre_desired_value;
       return out_value;
     }
   }
@@ -100,13 +104,17 @@ void motor2_encoder_2(void)
 //test
 void motor_theta_dist_callback(const std_msgs::Float64MultiArray::ConstPtr& msg)
 {
-  reference_angle = msg->data[0];
-  reference_distance = msg->data[1];
+ // reference_angle = msg->data[0];
+ // reference_distance = msg->data[1];
 
-  motor1->encoder_pulse_position1 = 0;
-  motor1->encoder_pulse_position2 = 0;
-  motor2->encoder_pulse_position1 = 0;
-  motor2->encoder_pulse_position2 = 0;
+  motor1->speed_motor = msg->data[0];
+  motor2->speed_motor = msg->data[1];
+
+
+//  motor1->encoder_pulse_position1 = 0;
+//  motor1->encoder_pulse_position2 = 0;
+//  motor2->encoder_pulse_position1 = 0;
+//  motor2->encoder_pulse_position2 = 0;
 
   motor1->check_position = false;
   motor2->check_position = false;
@@ -214,7 +222,7 @@ void motor_control(int id, int motor_line1, int mode, bool direction, int desire
       {
         desired_speed_rpm = motor1->position_controller(angle, motor1->position_max_rpm);
       }
-      current_desired_speed_motor1 = tra_motor1->linear_function(desired_speed_rpm, 2);
+      current_desired_speed_motor1 = tra_motor1->linear_function(desired_speed_rpm, motor1->acceleration_value);
       desired_speed_rpm = current_desired_speed_motor1;
      
       motor1->speed_controller(desired_speed_rpm);
@@ -224,7 +232,7 @@ void motor_control(int id, int motor_line1, int mode, bool direction, int desire
       {
         desired_speed_rpm = motor2->position_controller(angle, motor2->position_max_rpm);
       }
-      current_desired_speed_motor2 = tra_motor2->linear_function(desired_speed_rpm, 2);
+      current_desired_speed_motor2 = tra_motor2->linear_function(desired_speed_rpm, motor2->acceleration_value);
       desired_speed_rpm = current_desired_speed_motor2;
 
       motor2->speed_controller(desired_speed_rpm);
@@ -246,10 +254,10 @@ void controlFunction(const ros::TimerEvent&)
   motor1->onoff = 1;
   motor2->onoff = 1;
 
-  algorithm(reference_angle, reference_distance);
+  //algorithm(reference_angle, reference_distance);
 
-  motor_control(1, motor1_IN1, 1,  motor1->direction, motor1->speed_motor, motor1->angle_motor, motor1->onoff);
-  motor_control(2, motor2_IN1, 1,  motor2->direction, motor2->speed_motor, motor2->angle_motor, motor2->onoff);
+  motor_control(1, motor1_IN1, 0,  motor1->direction, motor1->speed_motor, motor1->angle_motor, motor1->onoff);
+  motor_control(2, motor2_IN1, 0,  motor2->direction, motor2->speed_motor, motor2->angle_motor, motor2->onoff);
 
   pwmWrite(motor1_PWM, (int) motor1->pwm_value_motor);
   pwmWrite(motor2_PWM, (int) motor2->pwm_value_motor);

@@ -31,6 +31,8 @@ class DcMotorForRaspberryPi
     int position_max_rpm;
     bool check_position;
 
+    double acceleration_value;
+
     void speed_controller(int desired_speed);
     double position_controller(int desired_angle, int max_rpm);
 

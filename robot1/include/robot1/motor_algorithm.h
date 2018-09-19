@@ -40,7 +40,7 @@ class TrajectoryGenerator
   public:
     TrajectoryGenerator();
     ~TrajectoryGenerator();
-    double linear_function(double desired_value, double time);
+    double linear_function(double desired_value, double acceleration);
 
   private:
     double pre_desired_value;
